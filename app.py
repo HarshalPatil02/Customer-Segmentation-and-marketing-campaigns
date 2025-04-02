@@ -61,46 +61,43 @@ if uploaded_file is not None:
     silhouette = silhouette_score(df_pca[['PC1', 'PC2']], df_pca['Cluster'])
     st.write(f"Silhouette Score: {silhouette:.2f}")
 
-    # Prepare features for clustering
-    features = ["MntWines", "MntMeatProducts"]
-    df_cluster = df[features]
+    #  Hierarchical Clustering
+    st.write("Hierarchical Clustering")
 
-  
-    # Hierarchical Clustering
+    hierarchical = AgglomerativeClustering(n_clusters=4, linkage='ward')
+    df['hierarchical_cluster'] = hierarchical.fit_predict(df[existing_features])
 
-    n_clusters_hierarchical = 3  
-    hierarchical = AgglomerativeClustering(n_clusters=n_clusters_hierarchical)
-    df["cluster_hierarchical"] = hierarchical.fit_predict(df_cluster)
+    fig, ax = plt.subplots()
+    scatter = ax.scatter(df[existing_features[0]], df[existing_features[1]], c=df['hierarchical_cluster'], cmap='rainbow')
+    plt.xlabel(existing_features[0])
+    plt.ylabel(existing_features[1])
+    plt.title('Hierarchical Clustering')
+    st.pyplot(fig)
 
-    # Compute Silhouette Score for Hierarchical Clustering
-    silhouette_hierarchical = silhouette_score(df_cluster, df["cluster_hierarchical"])
-    st.write(f"Silhouette Score for Hierarchical Clustering: {silhouette_hierarchical:.2f}")
+    # Silhouette Score
+    silhouette_avg_hierarchical = silhouette_score(df[existing_features], df['hierarchical_cluster'])
+    st.write(f"Silhouette Score (Hierarchical Clustering): {silhouette_avg_hierarchical:.2f}")
 
-    # Visualizing Hierarchical Clustering
-    fig = px.scatter(df, x="MntWines", y="MntMeatProducts", color=df["cluster_hierarchical"].astype(str), 
-                     title="Hierarchical Clustering", color_discrete_sequence=px.colors.qualitative.Set1)
-    st.plotly_chart(fig)
+    #  DBSCAN Clustering
+    st.write("DBSCAN Clustering")
 
-    # ==============================
-    # DBSCAN Clustering
-    # ==============================
+    dbscan = DBSCAN(eps=0.5, min_samples=5)
+    df['dbscan_cluster'] = dbscan.fit_predict(df[existing_features])
 
-    dbscan = DBSCAN(eps=0.5, min_samples=5)  # Adjust parameters as needed
-    df["cluster_dbscan"] = dbscan.fit_predict(df_cluster)
-
-    # Exclude noise points (-1) from silhouette calculation
-    valid_clusters = df[df["cluster_dbscan"] != -1]
-
-    if len(valid_clusters["cluster_dbscan"].unique()) > 1:
-        silhouette_dbscan = silhouette_score(valid_clusters[features], valid_clusters["cluster_dbscan"])
-        st.write(f"Silhouette Score for DBSCAN Clustering: {silhouette_dbscan:.2f}")
+    # Remove noise points (-1) for Silhouette Score
+    valid_labels = df['dbscan_cluster'][df['dbscan_cluster'] != -1]
+    if len(set(valid_labels)) > 1:
+        silhouette_avg_dbscan = silhouette_score(df[existing_features][df['dbscan_cluster'] != -1], valid_labels)
+        st.write(f"Silhouette Score (DBSCAN): {silhouette_avg_dbscan:.2f}")
     else:
-        st.write("DBSCAN did not form enough clusters to compute a silhouette score.")
+        st.write("Silhouette Score (DBSCAN) cannot be computed due to too few clusters.")
 
-    # Visualizing DBSCAN Clustering
-    fig = px.scatter(df, x="MntWines", y="MntMeatProducts", color=df["cluster_dbscan"].astype(str), 
-                     title="DBSCAN Clustering (Noise = -1)", color_discrete_sequence=px.colors.qualitative.Set3)
-    st.plotly_chart(fig)
+    fig, ax = plt.subplots()
+    scatter = ax.scatter(df[existing_features[0]], df[existing_features[1]], c=df['dbscan_cluster'], cmap='rainbow')
+    plt.xlabel(existing_features[0])
+    plt.ylabel(existing_features[1])
+    plt.title('DBSCAN Clusters')
+    st.pyplot(fig)
 
     # Income Distribution
     st.subheader("Income Distribution Across Customers")
