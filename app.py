@@ -16,9 +16,9 @@ st.title("Marketing Campaign Clustering")
 uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
 
 if uploaded_file is not None:
-    df = pd.read_excel(uploaded_file)
-    st.write("### Data Preview")
-    st.write(df.head())
+    df = pd.read_excel(uploaded_file, engine="openpyxl")
+    st.subheader("Uploaded Data Preview")
+    st.dataframe(df)  
 
     # Data Preprocessing
     df.drop(['ID', 'Year_Birth'], axis=1, inplace=True)
