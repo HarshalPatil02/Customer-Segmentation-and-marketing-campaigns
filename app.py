@@ -63,6 +63,20 @@ if uploaded_file is not None:
     fig, ax = plt.subplots()
     sns.histplot(df["Income"], bins=20, kde=True, ax=ax)
     st.pyplot(fig)
+    #  Histogram (Distribution of Income, Spending)
+    fig = px.histogram(df, x="Income", nbins=20, title="Income Distribution")
+    st.plotly_chart(fig)
+
+    #Boxplot (Detecting Outliers)
+    fig = px.box(df, y="Income", title="Income Boxplot")
+    st.plotly_chart(fig)
+
+    # Scatter Plot (Spending Patterns)
+    fig = px.scatter(df, x="MntWines", y="MntMeatProducts", color="cluster",
+                 title="Wine vs Meat Spending by Cluster")
+    st.plotly_chart(fig)
+
+
 
    
 
