@@ -86,12 +86,7 @@ if uploaded_file is not None:
     fig = px.pie(df, names="cluster", title="Customer Segments")
     st.plotly_chart(fig)
 
-    # Histogram
-    st.subheader("Age Distribution of Customers")
-    st.write("This histogram displays the age distribution of customers, showing the most common age groups in the dataset.")
-
-    fig = px.histogram(df, x="Age", nbins=20, title="Age Distribution")
-    st.plotly_chart(fig)
+  
 
 
 
