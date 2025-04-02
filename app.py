@@ -72,13 +72,13 @@ if uploaded_file is not None:
     df = df.dropna(subset=["MntWines", "MntMeatProducts", "cluster"])
     df["cluster"] = df["cluster"].astype(str)
     if "MntWines" in df.columns and "MntMeatProducts" in df.columns and "cluster" in df.columns:
-    fig = px.scatter(df, x="MntWines", y="MntMeatProducts", color="cluster",
+        fig = px.scatter(df, x="MntWines", y="MntMeatProducts", color="cluster",
                      title="Customer Segmentation",
                      labels={"MntWines": "Amount Spent on Wine", "MntMeatProducts": "Amount Spent on Meat"},
                      size_max=10)
-    st.plotly_chart(fig)
+        st.plotly_chart(fig)
     else:
-    st.error("Required columns are missing in the DataFrame!")
+        st.error("Required columns are missing in the DataFrame!")
 
 
     fig = px.scatter(df, x="MntWines", y="MntMeatProducts", color="cluster")
