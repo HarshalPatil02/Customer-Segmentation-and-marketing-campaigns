@@ -78,7 +78,8 @@ if uploaded_file is not None:
                      size_max=10)
     st.plotly_chart(fig)
     else:
-    st.error("Required columns missing in DataFrame!")
+    st.error("Required columns are missing in the DataFrame!")
+
 
     fig = px.scatter(df, x="MntWines", y="MntMeatProducts", color="cluster")
     st.plotly_chart(fig)
