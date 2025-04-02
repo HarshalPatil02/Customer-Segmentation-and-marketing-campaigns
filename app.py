@@ -64,34 +64,5 @@ if uploaded_file is not None:
     sns.histplot(df["Income"], bins=20, kde=True, ax=ax)
     st.pyplot(fig)
 
-    # Cluster Visulization
-    st.subheader("Clusters Visualization")
-    
-    st.write("Columns in DataFrame:", df.columns)
-    st.write("First few rows:", df.head())
-    df = df.dropna(subset=["MntWines", "MntMeatProducts", "cluster"])
-    df["cluster"] = df["cluster"].astype(str)
-    if "MntWines" in df.columns and "MntMeatProducts" in df.columns and "cluster" in df.columns:
-        fig = px.scatter(df, x="MntWines", y="MntMeatProducts", color="cluster",
-                     title="Customer Segmentation",
-                     labels={"MntWines": "Amount Spent on Wine", "MntMeatProducts": "Amount Spent on Meat"},
-                     size_max=10)
-        st.plotly_chart(fig)
-    else:
-        st.error("Required columns are missing in the DataFrame!")
-
-
-    fig = px.scatter(df, x="MntWines", y="MntMeatProducts", color="cluster")
-    st.plotly_chart(fig)
-    
-    # Download Processed Data
-    st.write("### Download Processed Data")
-    df_pca.to_csv("clustered_data.csv", index=False)
-    st.download_button("Download CSV", data=df_pca.to_csv(index=False), file_name="clustered_data.csv")
-
-
-
-
-
-
+   
 
