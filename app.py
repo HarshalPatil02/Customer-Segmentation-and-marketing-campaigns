@@ -105,6 +105,9 @@ if uploaded_file is not None:
     st.plotly_chart(fig)
 
     # Recency vs. Spending Behavior
+    spending_columns = ["MntWines", "MntFruits", "MntMeatProducts", "MntFishProducts", "MntSweetProducts", "MntGoldProds"]
+    df["Total_Spending"] = df[spending_columns].sum(axis=1)
+
     st.subheader("Recency vs. Spending Behavior")
 
     fig = px.scatter(df, x="Recency", y="Total_Spending", title="Recency vs. Total Spending", color="cluster", size="Total_Spending", hover_data=['Income'])
