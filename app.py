@@ -62,13 +62,16 @@ if uploaded_file is not None:
     st.write(f"Silhouette Score: {silhouette:.2f}")
 
     # Income Distribution
-    st.subheader("Income Distribution")
+    st.subheader("Income Distribution Across Customers")
+    st.write("This bar chart shows the income distribution of customers, grouped into different income ranges. It helps identify the most common income levels in the dataset.")
 
-    fig, ax = plt.subplots()
-    sns.histplot(df["Income"], bins=20, kde=True, ax=ax)
-    st.pyplot(fig)
+    fig = px.histogram(df, x="Income", nbins=20, title="Income Distribution", color_discrete_sequence=["#4CAF50"])
+    st.plotly_chart(fig)
 
     # Bar Chart
+    st.subheader("Customer Segmentation Count")
+    st.write("This bar chart shows the number of customers in each segment after applying K-Means clustering.")
+
     if "cluster" not in df.columns:
         st.error("Error: 'cluster' column is missing. Please ensure clustering has been performed.")
     else:
@@ -77,8 +80,19 @@ if uploaded_file is not None:
 
 
     # Pie chart
+    st.subheader("Customer Segmentation Proportion")
+    st.write("This pie chart represents the proportion of customers in each cluster. It helps in understanding the distribution of different customer groups.")
+
     fig = px.pie(df, names="cluster", title="Customer Segments")
     st.plotly_chart(fig)
+
+    # Histogram
+    st.subheader("Age Distribution of Customers")
+    st.write("This histogram displays the age distribution of customers, showing the most common age groups in the dataset.")
+
+    fig = px.histogram(df, x="Age", nbins=20, title="Age Distribution")
+    st.plotly_chart(fig)
+
 
 
 
