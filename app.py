@@ -57,6 +57,10 @@ if uploaded_file is not None:
     sns.scatterplot(x=df_pca['PC1'], y=df_pca['PC2'], hue=df_pca['Cluster'], palette='viridis', ax=ax)
     st.pyplot(fig)
 
+    # Silhouette Score
+    silhouette = silhouette_score(df_pca[['PC1', 'PC2']], df_pca['Cluster'])
+    st.write(f"Silhouette Score: {silhouette:.2f}")
+
     # Define features for clustering
     clustering_features = ["MntWines", "MntMeatProducts"]
 
