@@ -47,6 +47,10 @@ if uploaded_file is not None:
     kmeans = KMeans(n_clusters=k, random_state=0)
     df_pca['Cluster'] = kmeans.fit_predict(df_pca)
 
+    kmeans = KMeans(n_clusters=3, random_state=42)
+    df["cluster"] = kmeans.fit_predict(df[["MntWines", "MntMeatProducts"]])
+
+
     # Visualizing Clusters
     st.write("### K-Means Clustering")
     fig, ax = plt.subplots()
