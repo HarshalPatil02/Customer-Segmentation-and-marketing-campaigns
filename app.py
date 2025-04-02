@@ -10,7 +10,7 @@ from sklearn.cluster import KMeans, AgglomerativeClustering, DBSCAN
 from sklearn.metrics import silhouette_score
 
 # Title
-st.title("Marketing Campaign Clustering")
+st.title("Customer Segmentation & Marketing Campaign Analysis")
 
 # Upload the dataset
 uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
