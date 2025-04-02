@@ -98,17 +98,29 @@ if uploaded_file is not None:
     st.subheader("Segmentation by Education and Marital Status")
     st.write("These bar charts show the average spending of customers based on their education level and marital status.")
 
+    spending_columns = ["MntWines", "MntFruits", "MntMeatProducts", "MntFishProducts", "MntSweetProducts", "MntGoldProds"]
+    df["Total_Spending"] = df[spending_columns].sum(axis=1)
+
+    if "Total_Spending" not in df.columns:
+    st.error("Error: 'Total_Spending' column is missing. Please check your dataset.")
+    st.stop()
+
+    df["Total_Spending"].fillna(0, inplace=True)
+
+    df["Education"] = df["Education"].astype(str)
+    df["Marital_Status"] = df["Marital_Status"].astype(str)
+
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
 
     # Education vs. Average Spending
-    sns.barplot(x="Education", y="Total_Spending", hue="Education", data=df, errorbar=None, palette="Blues_r", ax=axes[0])
+    sns.barplot(x="Education", y="Total_Spending", data=df, errorbar=None, palette="Blues_r", ax=axes[0])
     axes[0].set_title("Average Spending by Education Level", fontsize=14)
     axes[0].set_xlabel("Education Level", fontsize=12)
     axes[0].set_ylabel("Average Spending", fontsize=12)
     axes[0].tick_params(axis='x', rotation=45)
 
     # Marital Status vs. Average Spending
-    sns.barplot(x="Marital_Status", y="Total_Spending", hue="Marital_Status", data=df, errorbar=None, palette="Greens_r", ax=axes[1])
+    sns.barplot(x="Marital_Status", y="Total_Spending", data=df, errorbar=None, palette="Greens_r", ax=axes[1])
     axes[1].set_title("Average Spending by Marital Status", fontsize=14)
     axes[1].set_xlabel("Marital Status", fontsize=12)
     axes[1].set_ylabel("Average Spending", fontsize=12)
@@ -116,6 +128,7 @@ if uploaded_file is not None:
 
     plt.tight_layout()
     st.pyplot(fig)  
+ 
 
 
 
