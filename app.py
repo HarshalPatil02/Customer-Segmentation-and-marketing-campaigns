@@ -48,7 +48,7 @@ if uploaded_file is not None:
     df_pca['Cluster'] = kmeans.fit_predict(df_pca)
 
     kmeans = KMeans(n_clusters=3, random_state=42)
-    df["cluster"] = kmeans.fit_predict(df[["MntWines", "MntMeatProducts"]]
+    df["cluster"] = kmeans.fit_predict(df[["MntWines", "MntMeatProducts"]])
                                        
     # Visualizing Clusters
     st.write("### K-Means Clustering")
