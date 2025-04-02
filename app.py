@@ -63,18 +63,11 @@ if uploaded_file is not None:
     fig, ax = plt.subplots()
     sns.histplot(df["Income"], bins=20, kde=True, ax=ax)
     st.pyplot(fig)
-    #  Histogram (Distribution of Income, Spending)
-    fig = px.histogram(df, x="Income", nbins=20, title="Income Distribution")
+
+    # Bar Chart
+    fig = px.bar(df["cluster"].value_counts(), title="Customer Segmentation Count")
     st.plotly_chart(fig)
 
-    #Boxplot (Detecting Outliers)
-    fig = px.box(df, y="Income", title="Income Boxplot")
-    st.plotly_chart(fig)
-
-    # Pairplot
-    fig, ax = plt.subplots()
-    sns.pairplot(df, hue="cluster", diag_kind="kde")
-    st.pyplot(fig)
 
 
 
