@@ -76,6 +76,12 @@ if uploaded_file is not None:
         st.plotly_chart(fig)
 
 
+    # Pie chart
+    fig = px.pie(df, names="cluster", title="Customer Segments")
+    st.plotly_chart(fig)
+
+
+
 
 
 
