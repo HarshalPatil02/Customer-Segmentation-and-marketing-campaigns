@@ -65,8 +65,12 @@ if uploaded_file is not None:
     st.pyplot(fig)
 
     # Bar Chart
-    fig = px.bar(df["cluster"].value_counts(), title="Customer Segmentation Count")
-    st.plotly_chart(fig)
+    if "cluster" not in df.columns:
+        st.error("Error: 'cluster' column is missing. Please ensure clustering has been performed.")
+    else:
+        fig = px.bar(df["cluster"].value_counts(), title="Customer Segmentation Count")
+        st.plotly_chart(fig)
+
 
 
 
