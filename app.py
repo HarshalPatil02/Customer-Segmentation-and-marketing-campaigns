@@ -61,6 +61,51 @@ if uploaded_file is not None:
     silhouette = silhouette_score(df_pca[['PC1', 'PC2']], df_pca['Cluster'])
     st.write(f"Silhouette Score: {silhouette:.2f}")
 
+    st.subheader("Hierarchical & DBSCAN Clustering")
+    st.write("This section explores customer segmentation using K-Means, Hierarchical, and DBSCAN clustering methods.")
+
+    # Prepare features for clustering
+    features = ["MntWines", "MntMeatProducts"]
+    df_cluster = df[features]
+
+    # ==============================
+    # Hierarchical Clustering
+    # ==============================
+
+    n_clusters_hierarchical = 3  # Define number of clusters
+    hierarchical = AgglomerativeClustering(n_clusters=n_clusters_hierarchical)
+    df["cluster_hierarchical"] = hierarchical.fit_predict(df_cluster)
+
+    # Compute Silhouette Score for Hierarchical Clustering
+    silhouette_hierarchical = silhouette_score(df_cluster, df["cluster_hierarchical"])
+    st.write(f"Silhouette Score for Hierarchical Clustering: {silhouette_hierarchical:.2f}")
+
+    # Visualizing Hierarchical Clustering
+    fig = px.scatter(df, x="MntWines", y="MntMeatProducts", color=df["cluster_hierarchical"].astype(str), 
+                     title="Hierarchical Clustering", color_discrete_sequence=px.colors.qualitative.Set1)
+    st.plotly_chart(fig)
+
+    # ==============================
+    # DBSCAN Clustering
+    # ==============================
+
+    dbscan = DBSCAN(eps=0.5, min_samples=5)  # Adjust parameters as needed
+    df["cluster_dbscan"] = dbscan.fit_predict(df_cluster)
+
+    # Exclude noise points (-1) from silhouette calculation
+    valid_clusters = df[df["cluster_dbscan"] != -1]
+
+    if len(valid_clusters["cluster_dbscan"].unique()) > 1:
+        silhouette_dbscan = silhouette_score(valid_clusters[features], valid_clusters["cluster_dbscan"])
+        st.write(f"Silhouette Score for DBSCAN Clustering: {silhouette_dbscan:.2f}")
+    else:
+        st.write("DBSCAN did not form enough clusters to compute a silhouette score.")
+
+    # Visualizing DBSCAN Clustering
+    fig = px.scatter(df, x="MntWines", y="MntMeatProducts", color=df["cluster_dbscan"].astype(str), 
+                     title="DBSCAN Clustering (Noise = -1)", color_discrete_sequence=px.colors.qualitative.Set3)
+    st.plotly_chart(fig)
+
     # Income Distribution
     st.subheader("Income Distribution Across Customers")
     st.write("This bar chart shows the income distribution of customers, grouped into different income ranges. It helps identify the most common income levels in the dataset.")
@@ -94,41 +139,7 @@ if uploaded_file is not None:
     fig.update_traces(textinfo='percent+label', textfont_size=14) 
     st.plotly_chart(fig)
 
-    # Segmentation by Education and Marital Status
-    st.subheader("Segmentation by Education and Marital Status")
-    st.write("These bar charts show the average spending of customers based on their education level and marital status.")
 
-    spending_columns = ["MntWines", "MntFruits", "MntMeatProducts", "MntFishProducts", "MntSweetProducts", "MntGoldProds"]
-    df["Total_Spending"] = df[spending_columns].sum(axis=1)
-
-    if "Total_Spending" not in df.columns:
-    st.error("Error: 'Total_Spending' column is missing. Please check your dataset.")
-    st.stop()
-
-    df["Total_Spending"].fillna(0, inplace=True)
-
-    df["Education"] = df["Education"].astype(str)
-    df["Marital_Status"] = df["Marital_Status"].astype(str)
-
-    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
-
-    # Education vs. Average Spending
-    sns.barplot(x="Education", y="Total_Spending", data=df, errorbar=None, palette="Blues_r", ax=axes[0])
-    axes[0].set_title("Average Spending by Education Level", fontsize=14)
-    axes[0].set_xlabel("Education Level", fontsize=12)
-    axes[0].set_ylabel("Average Spending", fontsize=12)
-    axes[0].tick_params(axis='x', rotation=45)
-
-    # Marital Status vs. Average Spending
-    sns.barplot(x="Marital_Status", y="Total_Spending", data=df, errorbar=None, palette="Greens_r", ax=axes[1])
-    axes[1].set_title("Average Spending by Marital Status", fontsize=14)
-    axes[1].set_xlabel("Marital Status", fontsize=12)
-    axes[1].set_ylabel("Average Spending", fontsize=12)
-    axes[1].tick_params(axis='x', rotation=45)
-
-    plt.tight_layout()
-    st.pyplot(fig)  
- 
 
 
 
