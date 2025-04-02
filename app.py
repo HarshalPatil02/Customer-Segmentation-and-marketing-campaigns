@@ -71,10 +71,10 @@ if uploaded_file is not None:
     fig = px.box(df, y="Income", title="Income Boxplot")
     st.plotly_chart(fig)
 
-    # Scatter Plot (Spending Patterns)
-    fig = px.scatter(df, x="MntWines", y="MntMeatProducts", color="cluster",
-                 title="Wine vs Meat Spending by Cluster")
-    st.plotly_chart(fig)
+    # Pairplot
+    fig, ax = plt.subplots()
+    sns.pairplot(df, hue="cluster", diag_kind="kde")
+    st.pyplot(fig)
 
 
 
