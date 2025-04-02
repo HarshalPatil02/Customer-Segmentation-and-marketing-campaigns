@@ -43,7 +43,10 @@ if uploaded_file is not None:
     df_pca = pd.DataFrame(df_pca, columns=['PC1', 'PC2'])
 
     # K-Means Clustering
-       # Select the same feature set used in X_new
+    k = 4  
+    kmeans = KMeans(n_clusters=k, random_state=0)
+    df_pca['Cluster'] = kmeans.fit_predict(df_pca)
+    
     selected_features = ["Income", "Recency", "MntWines", "MntFruits", 
                      "MntMeatProducts", "MntFishProducts", 
                      "MntSweetProducts", "MntGoldProds", 
@@ -64,8 +67,6 @@ if uploaded_file is not None:
     # Calculate Silhouette Score
     silhouette_avg = silhouette_score(df_selected[selected_features], df_selected["cluster"])
     st.write(f"Silhouette Score (K-Means): {silhouette_avg:.2f}")
-
-
 
     # Visualizing Clusters
     st.write("### K-Means Clustering")
