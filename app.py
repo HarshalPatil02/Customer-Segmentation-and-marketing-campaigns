@@ -60,11 +60,6 @@ if uploaded_file is not None:
     # Apply K-Means Clustering with Corrected Parameters
     kmeans = KMeans(n_clusters=4, random_state=42, n_init=10)
     df_selected["cluster"] = kmeans.fit_predict(df_selected)
-
-    # Calculate Silhouette Score
-    silhouette_avg = silhouette_score(df_selected[selected_features], df_selected["cluster"])
-    st.write(f"Silhouette Score (K-Means): {silhouette_avg:.2f}")
-
     
     # Visualizing Clusters
     # Visualizing K-Means Clusters (Using PCA for 2D Plot)
