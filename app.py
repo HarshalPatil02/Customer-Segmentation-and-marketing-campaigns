@@ -66,6 +66,19 @@ if uploaded_file is not None:
 
     # Cluster Visulization
     st.subheader("Clusters Visualization")
+    
+    st.write("Columns in DataFrame:", df.columns)
+    st.write("First few rows:", df.head())
+    df = df.dropna(subset=["MntWines", "MntMeatProducts", "cluster"])
+    df["cluster"] = df["cluster"].astype(str)
+    if "MntWines" in df.columns and "MntMeatProducts" in df.columns and "cluster" in df.columns:
+    fig = px.scatter(df, x="MntWines", y="MntMeatProducts", color="cluster",
+                     title="Customer Segmentation",
+                     labels={"MntWines": "Amount Spent on Wine", "MntMeatProducts": "Amount Spent on Meat"},
+                     size_max=10)
+    st.plotly_chart(fig)
+    else:
+    st.error("Required columns missing in DataFrame!")
 
     fig = px.scatter(df, x="MntWines", y="MntMeatProducts", color="cluster")
     st.plotly_chart(fig)
