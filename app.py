@@ -75,9 +75,10 @@ if uploaded_file is not None:
     if "cluster" not in df.columns:
         st.error("Error: 'cluster' column is missing. Please ensure clustering has been performed.")
     else:
-        fig = px.bar(df["cluster"].value_counts(), title="Customer Segmentation Count")
+        cluster_counts = df["cluster"].value_counts().reset_index()
+        cluster_counts.columns = ["Cluster", "Count"]
+        fig = px.bar(cluster_counts, x="Cluster", y="Count", title="Customer Segmentation Count", color="Cluster")
         st.plotly_chart(fig)
-
 
     # Pie chart
     st.subheader("Customer Segmentation Proportion")
