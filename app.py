@@ -80,12 +80,21 @@ if uploaded_file is not None:
         fig = px.bar(cluster_counts, x="Cluster", y="Count", title="Customer Segmentation Count", color="Cluster")
         st.plotly_chart(fig)
 
-    # Pie chart
+    # Pie chart with data labels
     st.subheader("Customer Segmentation Proportion")
     st.write("This pie chart represents the proportion of customers in each cluster. It helps in understanding the distribution of different customer groups.")
 
-    fig = px.pie(df, names="cluster", title="Customer Segments")
+    fig = px.pie(df, names="cluster", title="Customer Segments", 
+                 hole=0.3,  
+                 color_discrete_sequence=px.colors.qualitative.Set2,  
+                 labels={"cluster": "Customer Segment"},  
+                 template="plotly_white")  
+
+
+    fig.update_traces(textinfo='percent+label', textfont_size=14) 
+
     st.plotly_chart(fig)
+
 
   
 
