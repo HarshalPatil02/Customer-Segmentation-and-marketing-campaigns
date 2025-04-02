@@ -63,6 +63,12 @@ if uploaded_file is not None:
     sns.histplot(df["Income"], bins=20, kde=True, ax=ax)
     st.pyplot(fig)
 
+    # Cluster Visulization
+    st.subheader("Clusters Visualization")
+
+    fig = px.scatter(df, x="MntWines", y="MntMeatProducts", color="cluster")
+    st.plotly_chart(fig)
+    
     # Download Processed Data
     st.write("### Download Processed Data")
     df_pca.to_csv("clustered_data.csv", index=False)
