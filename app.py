@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
-
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -48,7 +42,7 @@ if uploaded_file is not None:
     df_pca = pd.DataFrame(df_pca, columns=['PC1', 'PC2'])
 
     # K-Means Clustering
-    k = 4  # You can allow user input for this
+    k = 4  
     kmeans = KMeans(n_clusters=k, random_state=0)
     df_pca['Cluster'] = kmeans.fit_predict(df_pca)
 
@@ -62,6 +56,13 @@ if uploaded_file is not None:
     silhouette = silhouette_score(df_pca[['PC1', 'PC2']], df_pca['Cluster'])
     st.write(f"Silhouette Score: {silhouette:.2f}")
 
+    # Income Distribution
+    st.subheader("Income Distribution")
+
+    fig, ax = plt.subplots()
+    sns.histplot(df["Income"], bins=20, kde=True, ax=ax)
+    st.pyplot(fig)
+
     # Download Processed Data
     st.write("### Download Processed Data")
     df_pca.to_csv("clustered_data.csv", index=False)
@@ -69,7 +70,6 @@ if uploaded_file is not None:
 
 
 
-# In[ ]:
 
 
 
