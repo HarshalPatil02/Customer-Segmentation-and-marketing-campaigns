@@ -104,6 +104,13 @@ if uploaded_file is not None:
     fig = px.bar(df_spending, x="Product Category", y="Total Spending", title="Total Spending by Product Category", color="Product Category")
     st.plotly_chart(fig)
 
+    # Recency vs. Spending Behavior
+    st.subheader("Recency vs. Spending Behavior")
+
+    fig = px.scatter(df, x="Recency", y="Total_Spending", title="Recency vs. Total Spending", color="cluster", size="Total_Spending", hover_data=['Income'])
+    st.plotly_chart(fig)
+
+
 
 
 
