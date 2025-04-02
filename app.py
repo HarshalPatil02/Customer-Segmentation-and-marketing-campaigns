@@ -61,53 +61,6 @@ if uploaded_file is not None:
     silhouette = silhouette_score(df_pca[['PC1', 'PC2']], df_pca['Cluster'])
     st.write(f"Silhouette Score: {silhouette:.2f}")
 
-    # Define features for clustering
-    clustering_features = ["MntWines", "MntMeatProducts"]
-
-    # ==============================
-    # Hierarchical Clustering
-    # ==============================
-    st.subheader("Hierarchical Clustering")
-
-    hierarchical = AgglomerativeClustering(n_clusters=4, linkage='ward')
-    df['hierarchical_cluster'] = hierarchical.fit_predict(df[clustering_features])
-
-    fig, ax = plt.subplots()
-    scatter = ax.scatter(df[clustering_features[0]], df[clustering_features[1]], c=df['hierarchical_cluster'], cmap='rainbow')
-    plt.xlabel(clustering_features[0])
-    plt.ylabel(clustering_features[1])
-    plt.title('Hierarchical Clustering')
-    st.pyplot(fig)
-
-    # Silhouette Score
-    silhouette_avg_hierarchical = silhouette_score(df[clustering_features], df['hierarchical_cluster'])
-    st.write(f"Silhouette Score (Hierarchical Clustering): {silhouette_avg_hierarchical:.2f}")
-
-    # ==============================
-    # DBSCAN Clustering
-    # ==============================
-    st.subheader("DBSCAN Clustering")
-
-    dbscan = DBSCAN(eps=0.5, min_samples=5)
-    df['dbscan_cluster'] = dbscan.fit_predict(df[clustering_features])
-
-    # Remove noise points (-1) for Silhouette Score
-    valid_labels = df['dbscan_cluster'][df['dbscan_cluster'] != -1]
-
-    if len(set(valid_labels)) > 1:
-        silhouette_avg_dbscan = silhouette_score(df[clustering_features][df['dbscan_cluster'] != -1], valid_labels)
-        st.write(f"Silhouette Score (DBSCAN): {silhouette_avg_dbscan:.2f}")
-    else:
-        st.write("Silhouette Score (DBSCAN) cannot be computed due to too few clusters.")
-
-    fig, ax = plt.subplots()
-    scatter = ax.scatter(df[clustering_features[0]], df[clustering_features[1]], c=df['dbscan_cluster'], cmap='rainbow')
-    plt.xlabel(clustering_features[0])
-    plt.ylabel(clustering_features[1])
-    plt.title('DBSCAN Clusters')
-    st.pyplot(fig)
-
-
     # Income Distribution
     st.subheader("Income Distribution Across Customers")
     st.write("This bar chart shows the income distribution of customers, grouped into different income ranges. It helps identify the most common income levels in the dataset.")
