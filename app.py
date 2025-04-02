@@ -61,18 +61,14 @@ if uploaded_file is not None:
     silhouette = silhouette_score(df_pca[['PC1', 'PC2']], df_pca['Cluster'])
     st.write(f"Silhouette Score: {silhouette:.2f}")
 
-    st.subheader("Hierarchical & DBSCAN Clustering")
-    st.write("This section explores customer segmentation using K-Means, Hierarchical, and DBSCAN clustering methods.")
-
     # Prepare features for clustering
     features = ["MntWines", "MntMeatProducts"]
     df_cluster = df[features]
 
-    # ==============================
+  
     # Hierarchical Clustering
-    # ==============================
 
-    n_clusters_hierarchical = 3  # Define number of clusters
+    n_clusters_hierarchical = 3  
     hierarchical = AgglomerativeClustering(n_clusters=n_clusters_hierarchical)
     df["cluster_hierarchical"] = hierarchical.fit_predict(df_cluster)
 
