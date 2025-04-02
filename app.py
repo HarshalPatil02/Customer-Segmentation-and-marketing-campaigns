@@ -46,28 +46,10 @@ if uploaded_file is not None:
     k = 4  
     kmeans = KMeans(n_clusters=k, random_state=0)
     df_pca['Cluster'] = kmeans.fit_predict(df_pca)
+
+    kmeans = KMeans(n_clusters=3, random_state=42)
+    df["cluster"] = kmeans.fit_predict(df[["MntWines", "MntMeatProducts"]])
     
-    selected_features = ["Income", "Recency", "MntWines", "MntFruits", 
-                     "MntMeatProducts", "MntFishProducts", 
-                     "MntSweetProducts", "MntGoldProds", 
-                     "NumDealsPurchases", "NumWebPurchases", 
-                     "NumCatalogPurchases", "NumStorePurchases", 
-                     "NumWebVisitsMonth"]
-
-    df_selected = df[selected_features].copy()  # Copy selected features
-
-    # Normalize Data
-    scaler = MinMaxScaler()
-    df_selected = pd.DataFrame(scaler.fit_transform(df_selected), columns=selected_features)
-
-    # Apply K-Means Clustering with Corrected Parameters
-    kmeans = KMeans(n_clusters=4, random_state=42, n_init=10)
-    df_selected["cluster"] = kmeans.fit_predict(df_selected)
-
-    # Calculate Silhouette Score
-    silhouette_avg = silhouette_score(df_selected[selected_features], df_selected["cluster"])
-    st.write(f"Silhouette Score (K-Means): {silhouette_avg:.2f}")
-
     # Visualizing Clusters
     st.write("### K-Means Clustering")
     fig, ax = plt.subplots()
