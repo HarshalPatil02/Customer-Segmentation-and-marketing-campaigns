@@ -49,7 +49,53 @@ if uploaded_file is not None:
 
     kmeans = KMeans(n_clusters=3, random_state=42)
     df["cluster"] = kmeans.fit_predict(df[["MntWines", "MntMeatProducts"]])
-                                       
+
+        # Hierarchical Clustering (Agglomerative)
+    agglo = AgglomerativeClustering(n_clusters=k)
+    df_pca['Agglo_Cluster'] = agglo.fit_predict(df_pca[['PC1', 'PC2']])
+
+    # DBSCAN Clustering
+    dbscan = DBSCAN(eps=0.3, min_samples=5)
+    df_pca['DBSCAN_Cluster'] = dbscan.fit_predict(df_pca[['PC1', 'PC2']])
+
+    # Silhouette Scores
+    kmeans_silhouette = silhouette_score(df_pca[['PC1', 'PC2']], df_pca['Cluster'])
+    agglo_silhouette = silhouette_score(df_pca[['PC1', 'PC2']], df_pca['Agglo_Cluster'])
+    
+    # DBSCAN might have noise points labeled as -1, so check before calculating Silhouette Score
+    if len(set(df_pca['DBSCAN_Cluster'])) > 1:
+        dbscan_silhouette = silhouette_score(df_pca[['PC1', 'PC2']], df_pca['DBSCAN_Cluster'])
+    else:
+        dbscan_silhouette = -1  # Assigning a low score for invalid clustering
+    
+    # Visualizing Hierarchical Clustering
+    st.write("### Hierarchical Clustering (Agglomerative)")
+    fig, ax = plt.subplots()
+    sns.scatterplot(x=df_pca['PC1'], y=df_pca['PC2'], hue=df_pca['Agglo_Cluster'], palette='coolwarm', ax=ax)
+    st.pyplot(fig)
+
+    # Visualizing DBSCAN Clustering
+    st.write("### DBSCAN Clustering")
+    fig, ax = plt.subplots()
+    sns.scatterplot(x=df_pca['PC1'], y=df_pca['PC2'], hue=df_pca['DBSCAN_Cluster'], palette='tab10', ax=ax)
+    st.pyplot(fig)
+
+    # Comparing Silhouette Scores
+    st.subheader("Silhouette Score Comparison")
+    silhouette_scores = pd.DataFrame({
+        "Clustering Method": ["K-Means", "Hierarchical", "DBSCAN"],
+        "Silhouette Score": [kmeans_silhouette, agglo_silhouette, dbscan_silhouette]
+    })
+
+    fig = px.bar(silhouette_scores, x="Clustering Method", y="Silhouette Score", 
+                 title="Silhouette Score Comparison", color="Clustering Method", text="Silhouette Score")
+    st.plotly_chart(fig)
+
+    # Displaying Silhouette Scores
+    st.write(f"**K-Means Silhouette Score:** {kmeans_silhouette:.2f}")
+    st.write(f"**Hierarchical Silhouette Score:** {agglo_silhouette:.2f}")
+    st.write(f"**DBSCAN Silhouette Score:** {dbscan_silhouette:.2f} (Lower score due to potential noise points)")
+
     # Visualizing Clusters
     st.write("### K-Means Clustering")
     fig, ax = plt.subplots()
