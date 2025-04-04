@@ -155,13 +155,18 @@ if uploaded_file is not None:
     st.plotly_chart(fig)
 
     # Recency vs. Spending Behavior
-    spending_columns = ["MntWines", "MntFruits", "MntMeatProducts", "MntFishProducts", "MntSweetProducts", "MntGoldProds"]
-    df["Total_Spending"] = df[spending_columns].sum(axis=1)
+    # Create bins for Recency
+    df["Recency_Group"] = pd.cut(df["Recency"], bins=[0, 30, 60, 90, 120, 150, 180], labels=["0-30", "31-60", "61-90", "91-120", "121-150", "151-180"])
 
-    st.subheader("Recency vs. Spending Behavior")
+    # Group by Recency Group and sum the spending
+    recency_spending = df.groupby("Recency_Group")["Total_Spending"].sum().reset_index()
 
-    fig = px.scatter(df, x="Recency", y="Total_Spending", title="Recency vs. Total Spending", color="cluster", size="Total_Spending", hover_data=['Income'])
+    st.subheader("Total Spending by Recency Group")
+
+    fig = px.bar(recency_spending, x="Recency_Group", y="Total_Spending", title="Total Spending across Recency Groups", 
+                 color="Recency_Group", text="Total_Spending")
     st.plotly_chart(fig)
+
 
    
 
