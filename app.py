@@ -155,17 +155,32 @@ if uploaded_file is not None:
     st.plotly_chart(fig)
 
     # Recency vs. Spending Behavior
-    # Create bins for Recency
-    df["Recency_Group"] = pd.cut(df["Recency"], bins=[0, 30, 60, 90, 120, 150, 180], labels=["0-30", "31-60", "61-90", "91-120", "121-150", "151-180"])
+    # Ensure 'Total_Spending' is created
+    spending_columns = ["MntWines", "MntFruits", "MntMeatProducts", "MntFishProducts", "MntSweetProducts", "MntGoldProds"]
 
-    # Group by Recency Group and sum the spending
-    recency_spending = df.groupby("Recency_Group")["Total_Spending"].sum().reset_index()
+    if all(col in df.columns for col in spending_columns):
+        df["Total_Spending"] = df[spending_columns].sum(axis=1)
+    else:
+        st.error("Error: Some spending columns are missing in the dataset.")
 
-    st.subheader("Total Spending by Recency Group")
+    # Ensure 'Recency_Group' is created
+    if "Recency" in df.columns:
+        df["Recency_Group"] = pd.cut(df["Recency"], bins=[0, 30, 60, 90, 120, 150, 180], 
+                                 labels=["0-30", "31-60", "61-90", "91-120", "121-150", "151-180"])
+    else:
+        st.error("Error: 'Recency' column is missing in the dataset.")
 
-    fig = px.bar(recency_spending, x="Recency_Group", y="Total_Spending", title="Total Spending across Recency Groups", 
-                 color="Recency_Group", text="Total_Spending")
-    st.plotly_chart(fig)
+    # Check if 'Recency_Group' and 'Total_Spending' exist before grouping
+    if "Recency_Group" in df.columns and "Total_Spending" in df.columns:
+        recency_spending = df.groupby("Recency_Group")["Total_Spending"].sum().reset_index()
+    
+        # Bar Chart
+        st.subheader("Total Spending by Recency Group")
+        fig = px.bar(recency_spending, x="Recency_Group", y="Total_Spending", 
+                 title="Total Spending across Recency Groups", color="Recency_Group", text="Total_Spending")
+        st.plotly_chart(fig)
+    else:
+        st.error("Error: 'Recency_Group' or 'Total_Spending' is missing. Cannot proceed with visualization.")
 
 
    
