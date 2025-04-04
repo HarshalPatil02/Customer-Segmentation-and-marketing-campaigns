@@ -143,8 +143,16 @@ if uploaded_file is not None:
 
     fig.update_traces(textinfo='percent+label', textfont_size=14) 
     st.plotly_chart(fig)
+    
+    # Spending Distribution by Product category
+    st.subheader("Spending Distribution by Product Category")
 
+    spending_columns = ["MntWines", "MntFruits", "MntMeatProducts", "MntFishProducts", "MntSweetProducts", "MntGoldProds"]
+    df_spending = df[spending_columns].sum().reset_index()
+    df_spending.columns = ["Product Category", "Total Spending"]
 
+    fig = px.bar(df_spending, x="Product Category", y="Total Spending", title="Total Spending by Product Category", color="Product Category")
+    st.plotly_chart(fig)
 
 
 
