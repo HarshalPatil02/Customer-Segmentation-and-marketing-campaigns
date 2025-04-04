@@ -1,110 +1,86 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-import plotly.express as px
-from sklearn.preprocessing import LabelEncoder, MinMaxScaler
-from sklearn.decomposition import PCA
-from sklearn.cluster import KMeans, AgglomerativeClustering, DBSCAN
-from sklearn.metrics import silhouette_score
+    import streamlit as st
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    import numpy as np
+    from sklearn.cluster import KMeans, AgglomerativeClustering, DBSCAN
+    from sklearn.metrics import silhouette_score
+    from sklearn.preprocessing import MinMaxScaler
+    from sklearn.decomposition import PCA
 
-# Title
-st.title("Customer Segmentation & Marketing Campaign Analysis")
-
-# Upload the dataset
-uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
-
-if uploaded_file is not None:
-    df = pd.read_excel(uploaded_file, engine="openpyxl")
-    st.subheader("Uploaded Data Preview")
-    st.dataframe(df)  
+    # Load Data
+    df = pd.read_excel('marketing_campaign1.xlsx')
 
     # Data Preprocessing
-    df.drop(['ID', 'Year_Birth'], axis=1, inplace=True)
     df['Income'].fillna(df['Income'].median(), inplace=True)
+    df.drop(['ID', 'Year_Birth'], axis=1, inplace=True)
 
-    # Label Encoding
-    le = LabelEncoder()
-    df['Education'] = le.fit_transform(df['Education'])
-    df['Marital_Status'] = le.fit_transform(df['Marital_Status'])
-
-    # Normalization
+    # Normalize Selected Features
     features_to_scale = ['Income', 'Recency', 'MntWines', 'MntFruits', 'MntMeatProducts', 
-                         'MntFishProducts', 'MntSweetProducts', 'MntGoldProds', 'NumDealsPurchases',
-                         'NumWebPurchases', 'NumCatalogPurchases', 'NumStorePurchases', 'NumWebVisitsMonth']
+                     'MntFishProducts', 'MntSweetProducts', 'MntGoldProds', 'NumDealsPurchases', 
+                     'NumWebPurchases', 'NumCatalogPurchases', 'NumStorePurchases', 'NumWebVisitsMonth']
 
     scaler = MinMaxScaler()
     df[features_to_scale] = scaler.fit_transform(df[features_to_scale])
 
-    # PCA
+    # PCA for Dimensionality Reduction
     pca = PCA(n_components=2)
-    df_pca = pca.fit_transform(df[features_to_scale])
-    df_pca = pd.DataFrame(df_pca, columns=['PC1', 'PC2'])
+    X_new = pd.DataFrame(pca.fit_transform(df[features_to_scale]), columns=['PC1', 'PC2'])
+
+    # Sidebar for Cluster Selection
+    st.sidebar.header("Clustering Parameters")
+    k_pca = st.sidebar.slider("Select Number of Clusters (K-Means)", min_value=2, max_value=10, value=4)
+    eps = st.sidebar.slider("DBSCAN: Epsilon (eps)", min_value=0.1, max_value=1.0, value=0.5, step=0.1)
+    min_samples = st.sidebar.slider("DBSCAN: Min Samples", min_value=2, max_value=10, value=5)
 
     # K-Means Clustering
-    k = 4  
-    kmeans = KMeans(n_clusters=k, random_state=0)
-    df_pca['Cluster'] = kmeans.fit_predict(df_pca)
+    kmeans = KMeans(n_clusters=k_pca, random_state=0)
+    X_new['cluster_kmeans'] = kmeans.fit_predict(X_new)
+    silhouette_kmeans = silhouette_score(X_new[['PC1', 'PC2']], X_new['cluster_kmeans'])
 
-    kmeans = KMeans(n_clusters=3, random_state=42)
-    df["cluster"] = kmeans.fit_predict(df[["MntWines", "MntMeatProducts"]])
-
-    # Hierarchical Clustering (Agglomerative)
-    agglo = AgglomerativeClustering(n_clusters=k)
-    df_pca['Agglo_Cluster'] = agglo.fit_predict(df_pca[['PC1', 'PC2']])
+    # Hierarchical Clustering
+    agglo = AgglomerativeClustering(n_clusters=k_pca, linkage='ward')
+    X_new['cluster_hierarchical'] = agglo.fit_predict(X_new)
+    silhouette_hierarchical = silhouette_score(X_new[['PC1', 'PC2']], X_new['cluster_hierarchical'])
 
     # DBSCAN Clustering
-    dbscan = DBSCAN(eps=0.3, min_samples=5)
-    df_pca['DBSCAN_Cluster'] = dbscan.fit_predict(df_pca[['PC1', 'PC2']])
+    dbscan = DBSCAN(eps=eps, min_samples=min_samples)
+    X_new['cluster_dbscan'] = dbscan.fit_predict(X_new)
 
-    # Silhouette Scores
-    kmeans_silhouette = silhouette_score(df_pca[['PC1', 'PC2']], df_pca['Cluster'])
-    agglo_silhouette = silhouette_score(df_pca[['PC1', 'PC2']], df_pca['Agglo_Cluster'])
-    
-    # DBSCAN might have noise points labeled as -1, so check before calculating Silhouette Score
-    if len(set(df_pca['DBSCAN_Cluster'])) > 1:
-        dbscan_silhouette = silhouette_score(df_pca[['PC1', 'PC2']], df_pca['DBSCAN_Cluster'])
+    # Filter out noise points (-1)
+    dbscan_filtered = X_new[X_new['cluster_dbscan'] != -1]
+    if dbscan_filtered['cluster_dbscan'].nunique() > 1:
+        silhouette_dbscan = silhouette_score(dbscan_filtered[['PC1', 'PC2']], dbscan_filtered['cluster_dbscan'])
     else:
-        dbscan_silhouette = -1  # Assigning a low score for invalid clustering
+        silhouette_dbscan = None
 
-    # Visualizing Clusters
-    st.write("### K-Means Clustering")
+    # Display Silhouette Scores
+    st.header("Silhouette Scores")
+    st.metric(label="K-Means", value=f"{silhouette_kmeans:.2f}")
+    st.metric(label="Hierarchical", value=f"{silhouette_hierarchical:.2f}")
+    st.metric(label="DBSCAN", value=f"{silhouette_dbscan:.2f}" if silhouette_dbscan else "Not Computed")
+
+    # Visualizations
+    st.header("Clustering Visualizations")
+
+    # K-Means Plot
     fig, ax = plt.subplots()
-    sns.scatterplot(x=df_pca['PC1'], y=df_pca['PC2'], hue=df_pca['Cluster'], palette='viridis', ax=ax)
+    sns.scatterplot(x=X_new['PC1'], y=X_new['PC2'], hue=X_new['cluster_kmeans'], palette='viridis', legend='full', alpha=0.7)
+    plt.title("K-Means Clustering")
     st.pyplot(fig)
 
-    # Silhouette Score
-    silhouette = silhouette_score(df_pca[['PC1', 'PC2']], df_pca['Cluster'])
-    st.write(f"Silhouette Score: {silhouette:.2f}")
-
-    # Visualizing Hierarchical Clustering
-    st.write("### Hierarchical Clustering (Agglomerative)")
+    # Hierarchical Plot
     fig, ax = plt.subplots()
-    sns.scatterplot(x=df_pca['PC1'], y=df_pca['PC2'], hue=df_pca['Agglo_Cluster'], palette='coolwarm', ax=ax)
+    sns.scatterplot(x=X_new['PC1'], y=X_new['PC2'], hue=X_new['cluster_hierarchical'], palette='coolwarm', legend='full', alpha=0.7)
+    plt.title("Hierarchical Clustering")
     st.pyplot(fig)
 
-    # Visualizing DBSCAN Clustering
-    st.write("### DBSCAN Clustering")
+    # DBSCAN Plot
     fig, ax = plt.subplots()
-    sns.scatterplot(x=df_pca['PC1'], y=df_pca['PC2'], hue=df_pca['DBSCAN_Cluster'], palette='tab10', ax=ax)
+    sns.scatterplot(x=X_new['PC1'], y=X_new['PC2'], hue=X_new['cluster_dbscan'], palette='rainbow', legend='full', alpha=0.7)
+    plt.title("DBSCAN Clustering")
     st.pyplot(fig)
 
-    # Comparing Silhouette Scores
-    st.subheader("Silhouette Score Comparison")
-    silhouette_scores = pd.DataFrame({
-        "Clustering Method": ["K-Means", "Hierarchical", "DBSCAN"],
-        "Silhouette Score": [kmeans_silhouette, agglo_silhouette, dbscan_silhouette]
-    })
-
-    fig = px.bar(silhouette_scores, x="Clustering Method", y="Silhouette Score", 
-                 title="Silhouette Score Comparison", color="Clustering Method", text="Silhouette Score")
-    st.plotly_chart(fig)
-
-    # Displaying Silhouette Scores
-    st.write(f"**K-Means Silhouette Score:** {kmeans_silhouette:.2f}")
-    st.write(f"**Hierarchical Silhouette Score:** {agglo_silhouette:.2f}")
-    st.write(f"**DBSCAN Silhouette Score:** {dbscan_silhouette:.2f} (Lower score due to potential noise points)")
 
     # Income Distribution
     st.subheader("Income Distribution Across Customers")
