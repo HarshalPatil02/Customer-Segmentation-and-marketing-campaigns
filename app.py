@@ -1,149 +1,161 @@
-import streamlit as st
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-import numpy as np
-from sklearn.cluster import KMeans, AgglomerativeClustering, DBSCAN
-from sklearn.metrics import silhouette_score
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.decomposition import PCA
+    import streamlit as st
+    import pandas as pd
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    from sklearn.preprocessing import LabelEncoder, MinMaxScaler
+    from sklearn.decomposition import PCA
+    from sklearn.cluster import KMeans, AgglomerativeClustering, DBSCAN
+    from sklearn.metrics import silhouette_score
 
-    # Load Data
-df = pd.read_excel('marketing_campaign1.xlsx')
+    # Title
+    st.title("Customer Segmentation & Marketing Campaign Analysis")
+
+    # Upload the dataset
+    uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
+
+    if uploaded_file is not None:
+    df = pd.read_excel(uploaded_file, engine="openpyxl")
+    st.subheader("Uploaded Data Preview")
+    st.dataframe(df)  
 
     # Data Preprocessing
-df['Income'].fillna(df['Income'].median(), inplace=True)
-df.drop(['ID', 'Year_Birth'], axis=1, inplace=True)
+    df.drop(['ID', 'Year_Birth'], axis=1, inplace=True)
+    df['Income'].fillna(df['Income'].median(), inplace=True)
 
-    # Normalize Selected Features
-features_to_scale = ['Income', 'Recency', 'MntWines', 'MntFruits', 'MntMeatProducts', 
-                     'MntFishProducts', 'MntSweetProducts', 'MntGoldProds', 'NumDealsPurchases', 
-                     'NumWebPurchases', 'NumCatalogPurchases', 'NumStorePurchases', 'NumWebVisitsMonth']
+    # Label Encoding
+    le = LabelEncoder()
+    df['Education'] = le.fit_transform(df['Education'])
+    df['Marital_Status'] = le.fit_transform(df['Marital_Status'])
 
-scaler = MinMaxScaler()
-df[features_to_scale] = scaler.fit_transform(df[features_to_scale])
+    # Normalization
+    features_to_scale = ['Income', 'Recency', 'MntWines', 'MntFruits', 'MntMeatProducts', 
+                         'MntFishProducts', 'MntSweetProducts', 'MntGoldProds', 'NumDealsPurchases',
+                         'NumWebPurchases', 'NumCatalogPurchases', 'NumStorePurchases', 'NumWebVisitsMonth']
 
-    # PCA for Dimensionality Reduction
-pca = PCA(n_components=2)
-X_new = pd.DataFrame(pca.fit_transform(df[features_to_scale]), columns=['PC1', 'PC2'])
+    scaler = MinMaxScaler()
+    df[features_to_scale] = scaler.fit_transform(df[features_to_scale])
 
-    # Sidebar for Cluster Selection
-st.sidebar.header("Clustering Parameters")
-k_pca = st.sidebar.slider("Select Number of Clusters (K-Means)", min_value=2, max_value=10, value=4)
-eps = st.sidebar.slider("DBSCAN: Epsilon (eps)", min_value=0.1, max_value=1.0, value=0.5, step=0.1)
-min_samples = st.sidebar.slider("DBSCAN: Min Samples", min_value=2, max_value=10, value=5)
+    # PCA
+    pca = PCA(n_components=2)
+    df_pca = pca.fit_transform(df[features_to_scale])
+    df_pca = pd.DataFrame(df_pca, columns=['PC1', 'PC2'])
 
     # K-Means Clustering
-kmeans = KMeans(n_clusters=k_pca, random_state=0)
-X_new['cluster_kmeans'] = kmeans.fit_predict(X_new)
-silhouette_kmeans = silhouette_score(X_new[['PC1', 'PC2']], X_new['cluster_kmeans'])
+    k = 4  
+    kmeans = KMeans(n_clusters=k, random_state=0)
+    df_pca['Cluster'] = kmeans.fit_predict(df_pca)
 
-    # Hierarchical Clustering
-agglo = AgglomerativeClustering(n_clusters=k_pca, linkage='ward')
-X_new['cluster_hierarchical'] = agglo.fit_predict(X_new)
-silhouette_hierarchical = silhouette_score(X_new[['PC1', 'PC2']], X_new['cluster_hierarchical'])
+    kmeans = KMeans(n_clusters=3, random_state=42)
+    df["cluster"] = kmeans.fit_predict(df[["MntWines", "MntMeatProducts"]])
+
+    # Hierarchical Clustering (Agglomerative)
+    agglo = AgglomerativeClustering(n_clusters=k)
+    df_pca['Agglo_Cluster'] = agglo.fit_predict(df_pca[['PC1', 'PC2']])
 
     # DBSCAN Clustering
-dbscan = DBSCAN(eps=eps, min_samples=min_samples)
-X_new['cluster_dbscan'] = dbscan.fit_predict(X_new)
+    dbscan = DBSCAN(eps=0.3, min_samples=5)
+    df_pca['DBSCAN_Cluster'] = dbscan.fit_predict(df_pca[['PC1', 'PC2']])
 
-    # Filter out noise points (-1)
-dbscan_filtered = X_new[X_new['cluster_dbscan'] != -1]
-if dbscan_filtered['cluster_dbscan'].nunique() > 1:
-    silhouette_dbscan = silhouette_score(dbscan_filtered[['PC1', 'PC2']], dbscan_filtered['cluster_dbscan'])
-else:
-    silhouette_dbscan = None
+    # Silhouette Scores
+    kmeans_silhouette = silhouette_score(df_pca[['PC1', 'PC2']], df_pca['Cluster'])
+    agglo_silhouette = silhouette_score(df_pca[['PC1', 'PC2']], df_pca['Agglo_Cluster'])
+    
+    # DBSCAN might have noise points labeled as -1, so check before calculating Silhouette Score
+    if len(set(df_pca['DBSCAN_Cluster'])) > 1:
+        dbscan_silhouette = silhouette_score(df_pca[['PC1', 'PC2']], df_pca['DBSCAN_Cluster'])
+    else:
+        dbscan_silhouette = -1  # Assigning a low score for invalid clustering
 
-    # Display Silhouette Scores
-st.header("Silhouette Scores")
-st.metric(label="K-Means", value=f"{silhouette_kmeans:.2f}")
-st.metric(label="Hierarchical", value=f"{silhouette_hierarchical:.2f}")
-st.metric(label="DBSCAN", value=f"{silhouette_dbscan:.2f}" if silhouette_dbscan else "Not Computed")
+    # Visualizing Clusters
+    st.write("### K-Means Clustering")
+    fig, ax = plt.subplots()
+    sns.scatterplot(x=df_pca['PC1'], y=df_pca['PC2'], hue=df_pca['Cluster'], palette='viridis', ax=ax)
+    st.pyplot(fig)
 
-    # Visualizations
-st.header("Clustering Visualizations")
+    # Silhouette Score
+    silhouette = silhouette_score(df_pca[['PC1', 'PC2']], df_pca['Cluster'])
+    st.write(f"Silhouette Score: {silhouette:.2f}")
 
-    # K-Means Plot
-fig, ax = plt.subplots()
-sns.scatterplot(x=X_new['PC1'], y=X_new['PC2'], hue=X_new['cluster_kmeans'], palette='viridis', legend='full', alpha=0.7)
-plt.title("K-Means Clustering")
-st.pyplot(fig)
+    # Visualizing Hierarchical Clustering
+    st.write("### Hierarchical Clustering (Agglomerative)")
+    fig, ax = plt.subplots()
+    sns.scatterplot(x=df_pca['PC1'], y=df_pca['PC2'], hue=df_pca['Agglo_Cluster'], palette='coolwarm', ax=ax)
+    st.pyplot(fig)
 
-    # Hierarchical Plot
-fig, ax = plt.subplots()
-sns.scatterplot(x=X_new['PC1'], y=X_new['PC2'], hue=X_new['cluster_hierarchical'], palette='coolwarm', legend='full', alpha=0.7)
-plt.title("Hierarchical Clustering")
-st.pyplot(fig)
+    # Visualizing DBSCAN Clustering
+    st.write("### DBSCAN Clustering")
+    fig, ax = plt.subplots()
+    sns.scatterplot(x=df_pca['PC1'], y=df_pca['PC2'], hue=df_pca['DBSCAN_Cluster'], palette='tab10', ax=ax)
+    st.pyplot(fig)
 
-    # DBSCAN Plot
-fig, ax = plt.subplots()
-sns.scatterplot(x=X_new['PC1'], y=X_new['PC2'], hue=X_new['cluster_dbscan'], palette='rainbow', legend='full', alpha=0.7)
-plt.title("DBSCAN Clustering")
-st.pyplot(fig)
+    # Comparing Silhouette Scores
+    st.subheader("Silhouette Score Comparison")
+    silhouette_scores = pd.DataFrame({
+        "Clustering Method": ["K-Means", "Hierarchical", "DBSCAN"],
+        "Silhouette Score": [kmeans_silhouette, agglo_silhouette, dbscan_silhouette]
+    })
 
-
-    # Income Distribution
-st.subheader("Income Distribution Across Customers")
-st.write("This bar chart shows the income distribution of customers, grouped into different income ranges. It helps identify the most common income levels in the dataset.")
-
-fig, ax = plt.subplots()
-sns.histplot(df["Income"], bins=20, kde=True, ax=ax)
-st.pyplot(fig)
-
-    # Bar Chart
-st.subheader("Customer Segmentation Count")
-st.write("This bar chart shows the number of customers in each segment after applying K-Means clustering.")
-
-if "cluster" not in df.columns:
-    st.error("Error: 'cluster' column is missing. Please ensure clustering has been performed.")
-else:
-    cluster_counts = df["cluster"].value_counts().reset_index()
-    cluster_counts.columns = ["Cluster", "Count"]
-    fig = px.bar(cluster_counts, x="Cluster", y="Count", title="Customer Segmentation Count", color="Cluster")
+    fig = px.bar(silhouette_scores, x="Clustering Method", y="Silhouette Score", 
+                 title="Silhouette Score Comparison", color="Clustering Method", text="Silhouette Score")
     st.plotly_chart(fig)
 
+    # Displaying Silhouette Scores
+    st.write(f"**K-Means Silhouette Score:** {kmeans_silhouette:.2f}")
+    st.write(f"**Hierarchical Silhouette Score:** {agglo_silhouette:.2f}")
+    st.write(f"**DBSCAN Silhouette Score:** {dbscan_silhouette:.2f} (Lower score due to potential noise points)")
+
+    # Income Distribution
+    st.subheader("Income Distribution Across Customers")
+    st.write("This bar chart shows the income distribution of customers, grouped into different income ranges. It helps identify the most common income levels in the dataset.")
+
+    fig, ax = plt.subplots()
+    sns.histplot(df["Income"], bins=20, kde=True, ax=ax)
+    st.pyplot(fig)
+
+    # Bar Chart
+    st.subheader("Customer Segmentation Count")
+    st.write("This bar chart shows the number of customers in each segment after applying K-Means clustering.")
+
+    if "cluster" not in df.columns:
+        st.error("Error: 'cluster' column is missing. Please ensure clustering has been performed.")
+    else:
+        cluster_counts = df["cluster"].value_counts().reset_index()
+        cluster_counts.columns = ["Cluster", "Count"]
+        fig = px.bar(cluster_counts, x="Cluster", y="Count", title="Customer Segmentation Count", color="Cluster")
+        st.plotly_chart(fig)
+
     # Pie chart with data labels
-st.subheader("Customer Segmentation Proportion")
-st.write("This pie chart represents the proportion of customers in each cluster. It helps in understanding the distribution of different customer groups.")
+    st.subheader("Customer Segmentation Proportion")
+    st.write("This pie chart represents the proportion of customers in each cluster. It helps in understanding the distribution of different customer groups.")
 
-fig = px.pie(df, names="cluster", title="Customer Segments", 
-                hole=0.3,  
-                color_discrete_sequence=px.colors.qualitative.Set2,  
-                labels={"cluster": "Customer Segment"},  
-                template="plotly_white")  
+    fig = px.pie(df, names="cluster", title="Customer Segments", 
+                 hole=0.3,  
+                 color_discrete_sequence=px.colors.qualitative.Set2,  
+                 labels={"cluster": "Customer Segment"},  
+                 template="plotly_white")  
 
-fig.update_traces(textinfo='percent+label', textfont_size=14) 
-st.plotly_chart(fig)
+    fig.update_traces(textinfo='percent+label', textfont_size=14) 
+    st.plotly_chart(fig)
 
     # Spending Distribution by Product category
-st.subheader("Spending Distribution by Product Category")
+    st.subheader("Spending Distribution by Product Category")
 
-spending_columns = ["MntWines", "MntFruits", "MntMeatProducts", "MntFishProducts", "MntSweetProducts", "MntGoldProds"]
-df_spending = df[spending_columns].sum().reset_index()
-df_spending.columns = ["Product Category", "Total Spending"]
+    spending_columns = ["MntWines", "MntFruits", "MntMeatProducts", "MntFishProducts", "MntSweetProducts", "MntGoldProds"]
+    df_spending = df[spending_columns].sum().reset_index()
+    df_spending.columns = ["Product Category", "Total Spending"]
 
-fig = px.bar(df_spending, x="Product Category", y="Total Spending", title="Total Spending by Product Category", color="Product Category")
-st.plotly_chart(fig)
+    fig = px.bar(df_spending, x="Product Category", y="Total Spending", title="Total Spending by Product Category", color="Product Category")
+    st.plotly_chart(fig)
 
     # Recency vs. Spending Behavior
-spending_columns = ["MntWines", "MntFruits", "MntMeatProducts", "MntFishProducts", "MntSweetProducts", "MntGoldProds"]
-df["Total_Spending"] = df[spending_columns].sum(axis=1)
+    spending_columns = ["MntWines", "MntFruits", "MntMeatProducts", "MntFishProducts", "MntSweetProducts", "MntGoldProds"]
+    df["Total_Spending"] = df[spending_columns].sum(axis=1)
 
-st.subheader("Recency vs. Spending Behavior")
+    st.subheader("Recency vs. Spending Behavior")
 
-fig = px.scatter(df, x="Recency", y="Total_Spending", title="Recency vs. Total Spending", color="cluster", size="Total_Spending", hover_data=['Income'])
-st.plotly_chart(fig)
-
-
-
-
-
-
-
-  
-
-
-
+    fig = px.scatter(df, x="Recency", y="Total_Spending", title="Recency vs. Total Spending", color="cluster", size="Total_Spending", hover_data=['Income'])
+    st.plotly_chart(fig)
 
 
 
