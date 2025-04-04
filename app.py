@@ -157,8 +157,5 @@
     fig = px.scatter(df, x="Recency", y="Total_Spending", title="Recency vs. Total Spending", color="cluster", size="Total_Spending", hover_data=['Income'])
     st.plotly_chart(fig)
 
-
-
-
    
 
