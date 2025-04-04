@@ -67,7 +67,7 @@ st.header("Clustering Visualizations")
 fig, ax = plt.subplots()
 sns.scatterplot(x=X_new['PC1'], y=X_new['PC2'], hue=X_new['cluster_kmeans'], palette='viridis', legend='full', alpha=0.7)
 plt.title("K-Means Clustering")
-    st.pyplot(fig)
+st.pyplot(fig)
 
     # Hierarchical Plot
 fig, ax = plt.subplots()
