@@ -26,9 +26,6 @@ if uploaded_file is not None:
         st.error(f"An error occurred while reading the file: {e}")
 
 
-st.subheader("Uploaded Data Preview")
-st.dataframe(df)
-
 # Data Preprocessing
 if 'ID' in df.columns and 'Year_Birth' in df.columns:
     df.drop(['ID', 'Year_Birth'], axis=1, inplace=True)
