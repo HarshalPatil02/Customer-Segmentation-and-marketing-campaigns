@@ -16,12 +16,12 @@ uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
 
 if uploaded_file is not None:
     try:
-    df = pd.read_excel(uploaded_file, engine="openpyxl")
-    if df.empty:
-        st.error("Uploaded file is empty. Please upload a valid Excel file.")
-    else:
-        st.subheader("Uploaded Data Preview")
-        st.dataframe(df)
+        df = pd.read_excel(uploaded_file, engine="openpyxl")
+        if df.empty:
+            st.error("Uploaded file is empty. Please upload a valid Excel file.")
+        else:
+            st.subheader("Uploaded Data Preview")
+            st.dataframe(df)
     except Exception as e:
         st.error(f"An error occurred while reading the file: {e}")
 
