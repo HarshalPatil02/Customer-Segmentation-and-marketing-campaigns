@@ -19,6 +19,9 @@ if uploaded_file is not None:
     st.subheader("Uploaded Data Preview")
     st.dataframe(df)
 
+st.subheader("Uploaded Data Preview")
+st.dataframe(df)
+
 # Data Preprocessing
 if 'ID' in df.columns and 'Year_Birth' in df.columns:
     df.drop(['ID', 'Year_Birth'], axis=1, inplace=True)
