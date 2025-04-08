@@ -178,3 +178,6 @@ if st.checkbox("Show Train-Test Split Evaluation for K-Means"):
     
     fig = px.bar(df_spending, x="Product Category", y="Total Spending", title="Total Spending by Product Category", color="Product Category")
     st.plotly_chart(fig)
+
+else:
+    st.warning("Please upload an Excel file to proceed.")
