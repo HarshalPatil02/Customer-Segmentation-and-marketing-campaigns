@@ -1,195 +1,161 @@
-{
- "cells": [
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "7f150efd-efc1-4735-9577-7e7d06ecadc0",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "import streamlit as st\n",
-    "import pandas as pd\n",
-    "import numpy as np\n",
-    "import matplotlib.pyplot as plt\n",
-    "import seaborn as sns\n",
-    "from sklearn.preprocessing import LabelEncoder, MinMaxScaler\n",
-    "from sklearn.decomposition import PCA\n",
-    "from sklearn.cluster import KMeans, AgglomerativeClustering, DBSCAN\n",
-    "from sklearn.metrics import silhouette_score\n",
-    "import plotly.express as px\n",
-    "\n",
-    "st.title(\"Customer Segmentation & Marketing Campaign Analysis\")\n",
-    "\n",
-    "# Upload File\n",
-    "uploaded_file = st.file_uploader(\"Upload Excel File\", type=[\"xlsx\"])\n",
-    "\n",
-    "if uploaded_file is not None:\n",
-    "    df = pd.read_excel(uploaded_file, engine=\"openpyxl\")\n",
-    "    st.subheader(\"Uploaded Data Preview\")\n",
-    "    st.dataframe(df)\n",
-    "\n",
-    "# Data Preprocessing\n",
-    "if 'ID' in df.columns and 'Year_Birth' in df.columns:\n",
-    "    df.drop(['ID', 'Year_Birth'], axis=1, inplace=True)\n",
-    "\n",
-    "if 'Income' in df.columns:\n",
-    "    df['Income'].fillna(df['Income'].median(), inplace=True)\n",
-    "\n",
-    "# Label Encoding\n",
-    "le = LabelEncoder()\n",
-    "if 'Education' in df.columns and 'Marital_Status' in df.columns:\n",
-    "    df['Education'] = le.fit_transform(df['Education'])\n",
-    "    df['Marital_Status'] = le.fit_transform(df['Marital_Status'])\n",
-    "\n",
-    "# Normalization\n",
-    "features_to_scale = ['Income', 'Recency', 'MntWines', 'MntFruits', 'MntMeatProducts', \n",
-    "                     'MntFishProducts', 'MntSweetProducts', 'MntGoldProds', 'NumDealsPurchases',\n",
-    "                     'NumWebPurchases', 'NumCatalogPurchases', 'NumStorePurchases', 'NumWebVisitsMonth']\n",
-    "\n",
-    "missing_cols = [col for col in features_to_scale if col not in df.columns]\n",
-    "if not missing_cols:\n",
-    "    scaler = MinMaxScaler()\n",
-    "    df[features_to_scale] = scaler.fit_transform(df[features_to_scale])\n",
-    "\n",
-    "# Train-Test Split and KMeans Evaluation\n",
-    "if st.checkbox(\"Show Train-Test Split Evaluation for K-Means\"):\n",
-    "    X = df[features_to_scale]\n",
-    "    X_train, X_test = train_test_split(X, test_size=0.2, random_state=42)\n",
-    "\n",
-    "    kmeans = KMeans(n_clusters=3, random_state=42)\n",
-    "    kmeans.fit(X_train)\n",
-    "\n",
-    "    train_clusters = kmeans.predict(X_train)\n",
-    "    test_clusters = kmeans.predict(X_test)\n",
-    "\n",
-    "    sil_train = silhouette_score(X_train, train_clusters)\n",
-    "    sil_test = silhouette_score(X_test, test_clusters)\n",
-    "\n",
-    "    st.write(f\"**Silhouette Score (Train):** {sil_train:.2f}\")\n",
-    "    st.write(f\"**Silhouette Score (Test):** {sil_test:.2f}\")\n",
-    "\n",
-    "# PCA\n",
-    "pca = PCA(n_components=2)\n",
-    "df_pca = pca.fit_transform(df[features_to_scale])\n",
-    "df_pca = pd.DataFrame(df_pca, columns=['PC1', 'PC2'])\n",
-    "\n",
-    "# K-Means Clustering\n",
-    "k = 4  \n",
-    "kmeans = KMeans(n_clusters=k, random_state=0)\n",
-    "df_pca['Cluster'] = kmeans.fit_predict(df_pca)\n",
-    "\n",
-    "kmeans = KMeans(n_clusters=3, random_state=42)\n",
-    "df[\"cluster\"] = kmeans.fit_predict(df[[\"MntWines\", \"MntMeatProducts\"]])\n",
-    "\n",
-    "# Hierarchical Clustering (Agglomerative)\n",
-    "agglo = AgglomerativeClustering(n_clusters=k)\n",
-    "df_pca['Agglo_Cluster'] = agglo.fit_predict(df_pca[['PC1', 'PC2']])\n",
-    "\n",
-    "# DBSCAN Clustering\n",
-    "dbscan = DBSCAN(eps=0.3, min_samples=5)\n",
-    "df_pca['DBSCAN_Cluster'] = dbscan.fit_predict(df_pca[['PC1', 'PC2']])\n",
-    "\n",
-    "# Silhouette Scores\n",
-    "kmeans_silhouette = silhouette_score(df_pca[['PC1', 'PC2']], df_pca['Cluster'])\n",
-    "agglo_silhouette = silhouette_score(df_pca[['PC1', 'PC2']], df_pca['Agglo_Cluster'])\n",
-    "\n",
-    "if len(set(df_pca['DBSCAN_Cluster'])) > 1:\n",
-    "    dbscan_silhouette = silhouette_score(df_pca[['PC1', 'PC2']], df_pca['DBSCAN_Cluster'])\n",
-    "else:\n",
-    "    dbscan_silhouette = -1\n",
-    "\n",
-    "# Visualizing Clusters\n",
-    "st.write(\"### K-Means Clustering\")\n",
-    "fig, ax = plt.subplots()\n",
-    "sns.scatterplot(x=df_pca['PC1'], y=df_pca['PC2'], hue=df_pca['Cluster'], palette='viridis', ax=ax)\n",
-    "st.pyplot(fig)\n",
-    "\n",
-    "st.write(f\"Silhouette Score: {kmeans_silhouette:.2f}\")\n",
-    "\n",
-    "st.write(\"### Hierarchical Clustering (Agglomerative)\")\n",
-    "fig, ax = plt.subplots()\n",
-    "sns.scatterplot(x=df_pca['PC1'], y=df_pca['PC2'], hue=df_pca['Agglo_Cluster'], palette='coolwarm', ax=ax)\n",
-    "st.pyplot(fig)\n",
-    "\n",
-    "st.write(\"### DBSCAN Clustering\")\n",
-    "fig, ax = plt.subplots()\n",
-    "sns.scatterplot(x=df_pca['PC1'], y=df_pca['PC2'], hue=df_pca['DBSCAN_Cluster'], palette='tab10', ax=ax)\n",
-    "st.pyplot(fig)\n",
-    "\n",
-    "st.subheader(\"Silhouette Score Comparison\")\n",
-    "silhouette_scores = pd.DataFrame({\n",
-    "    \"Clustering Method\": [\"K-Means\", \"Hierarchical\", \"DBSCAN\"],\n",
-    "    \"Silhouette Score\": [kmeans_silhouette, agglo_silhouette, dbscan_silhouette]\n",
-    "})\n",
-    "\n",
-    "fig = px.bar(silhouette_scores, x=\"Clustering Method\", y=\"Silhouette Score\", \n",
-    "             title=\"Silhouette Score Comparison\", color=\"Clustering Method\", text=\"Silhouette Score\")\n",
-    "st.plotly_chart(fig)\n",
-    "\n",
-    "st.write(f\"**K-Means Silhouette Score:** {kmeans_silhouette:.2f}\")\n",
-    "st.write(f\"**Hierarchical Silhouette Score:** {agglo_silhouette:.2f}\")\n",
-    "st.write(f\"**DBSCAN Silhouette Score:** {dbscan_silhouette:.2f} (Lower score due to potential noise points)\")\n",
-    "\n",
-    "st.subheader(\"Income Distribution Across Customers\")\n",
-    "st.write(\"This bar chart shows the income distribution of customers, grouped into different income ranges. It helps identify the most common income levels in the dataset.\")\n",
-    "\n",
-    "fig, ax = plt.subplots()\n",
-    "sns.histplot(df[\"Income\"], bins=20, kde=True, ax=ax)\n",
-    "st.pyplot(fig)\n",
-    "\n",
-    "st.subheader(\"Customer Segmentation Count\")\n",
-    "st.write(\"This bar chart shows the number of customers in each segment after applying K-Means clustering.\")\n",
-    "\n",
-    "if \"cluster\" not in df.columns:\n",
-    "    st.error(\"Error: 'cluster' column is missing. Please ensure clustering has been performed.\")\n",
-    "else:\n",
-    "    cluster_counts = df[\"cluster\"].value_counts().reset_index()\n",
-    "    cluster_counts.columns = [\"Cluster\", \"Count\"]\n",
-    "    fig = px.bar(cluster_counts, x=\"Cluster\", y=\"Count\", title=\"Customer Segmentation Count\", color=\"Cluster\")\n",
-    "    st.plotly_chart(fig)\n",
-    "\n",
-    "st.subheader(\"Customer Segmentation Proportion\")\n",
-    "st.write(\"This pie chart represents the proportion of customers in each cluster. It helps in understanding the distribution of different customer groups.\")\n",
-    "\n",
-    "fig = px.pie(df, names=\"cluster\", title=\"Customer Segments\", \n",
-    "             hole=0.3,  \n",
-    "             color_discrete_sequence=px.colors.qualitative.Set2,  \n",
-    "             labels={\"cluster\": \"Customer Segment\"},  \n",
-    "             template=\"plotly_white\")  \n",
-    "\n",
-    "fig.update_traces(textinfo='percent+label', textfont_size=14) \n",
-    "st.plotly_chart(fig)\n",
-    "\n",
-    "st.subheader(\"Spending Distribution by Product Category\")\n",
-    "\n",
-    "spending_columns = [\"MntWines\", \"MntFruits\", \"MntMeatProducts\", \"MntFishProducts\", \"MntSweetProducts\", \"MntGoldProds\"]\n",
-    "df_spending = df[spending_columns].sum().reset_index()\n",
-    "df_spending.columns = [\"Product Category\", \"Total Spending\"]\n",
-    "\n",
-    "fig = px.bar(df_spending, x=\"Product Category\", y=\"Total Spending\", title=\"Total Spending by Product Category\", color=\"Product Category\")\n",
-    "st.plotly_chart(fig)"
-   ]
-  }
- ],
- "metadata": {
-  "kernelspec": {
-   "display_name": "Python 3 (ipykernel)",
-   "language": "python",
-   "name": "python3"
-  },
-  "language_info": {
-   "codemirror_mode": {
-    "name": "ipython",
-    "version": 3
-   },
-   "file_extension": ".py",
-   "mimetype": "text/x-python",
-   "name": "python",
-   "nbconvert_exporter": "python",
-   "pygments_lexer": "ipython3",
-   "version": "3.12.4"
-  }
- },
- "nbformat": 4,
- "nbformat_minor": 5
-}
+import streamlit as st
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler
+from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans, AgglomerativeClustering, DBSCAN
+from sklearn.metrics import silhouette_score
+import plotly.express as px
+
+st.title("Customer Segmentation & Marketing Campaign Analysis")
+
+# Upload File
+uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
+
+if uploaded_file is not None:
+    df = pd.read_excel(uploaded_file, engine="openpyxl")
+    st.subheader("Uploaded Data Preview")
+    st.dataframe(df)
+
+# Data Preprocessing
+if 'ID' in df.columns and 'Year_Birth' in df.columns:
+    df.drop(['ID', 'Year_Birth'], axis=1, inplace=True)
+
+if 'Income' in df.columns:
+    df['Income'].fillna(df['Income'].median(), inplace=True)
+
+# Label Encoding
+le = LabelEncoder()
+if 'Education' in df.columns and 'Marital_Status' in df.columns:
+    df['Education'] = le.fit_transform(df['Education'])
+    df['Marital_Status'] = le.fit_transform(df['Marital_Status'])
+
+# Normalization
+features_to_scale = ['Income', 'Recency', 'MntWines', 'MntFruits', 'MntMeatProducts', 
+                     'MntFishProducts', 'MntSweetProducts', 'MntGoldProds', 'NumDealsPurchases',
+                     'NumWebPurchases', 'NumCatalogPurchases', 'NumStorePurchases', 'NumWebVisitsMonth']
+
+missing_cols = [col for col in features_to_scale if col not in df.columns]
+if not missing_cols:
+    scaler = MinMaxScaler()
+    df[features_to_scale] = scaler.fit_transform(df[features_to_scale])
+
+# Train-Test Split and KMeans Evaluation
+if st.checkbox("Show Train-Test Split Evaluation for K-Means"):
+    X = df[features_to_scale]
+    X_train, X_test = train_test_split(X, test_size=0.2, random_state=42)
+
+    kmeans = KMeans(n_clusters=3, random_state=42)
+    kmeans.fit(X_train)
+
+    train_clusters = kmeans.predict(X_train)
+    test_clusters = kmeans.predict(X_test)
+
+    sil_train = silhouette_score(X_train, train_clusters)
+    sil_test = silhouette_score(X_test, test_clusters)
+
+    st.write(f"**Silhouette Score (Train):** {sil_train:.2f}")
+    st.write(f"**Silhouette Score (Test):** {sil_test:.2f}")
+
+# PCA
+pca = PCA(n_components=2)
+df_pca = pca.fit_transform(df[features_to_scale])
+df_pca = pd.DataFrame(df_pca, columns=['PC1', 'PC2'])
+
+# K-Means Clustering
+k = 4  
+kmeans = KMeans(n_clusters=k, random_state=0)
+df_pca['Cluster'] = kmeans.fit_predict(df_pca)
+
+kmeans = KMeans(n_clusters=3, random_state=42)
+df["cluster"] = kmeans.fit_predict(df[["MntWines", "MntMeatProducts"]])
+
+# Hierarchical Clustering (Agglomerative)
+agglo = AgglomerativeClustering(n_clusters=k)
+df_pca['Agglo_Cluster'] = agglo.fit_predict(df_pca[['PC1', 'PC2']])
+
+# DBSCAN Clustering
+dbscan = DBSCAN(eps=0.3, min_samples=5)
+df_pca['DBSCAN_Cluster'] = dbscan.fit_predict(df_pca[['PC1', 'PC2']])
+
+# Silhouette Scores
+kmeans_silhouette = silhouette_score(df_pca[['PC1', 'PC2']], df_pca['Cluster'])
+agglo_silhouette = silhouette_score(df_pca[['PC1', 'PC2']], df_pca['Agglo_Cluster'])
+
+if len(set(df_pca['DBSCAN_Cluster'])) > 1:
+    dbscan_silhouette = silhouette_score(df_pca[['PC1', 'PC2']], df_pca['DBSCAN_Cluster'])
+else:
+    dbscan_silhouette = -1
+
+# Visualizing Clusters
+st.write("### K-Means Clustering")
+fig, ax = plt.subplots()
+sns.scatterplot(x=df_pca['PC1'], y=df_pca['PC2'], hue=df_pca['Cluster'], palette='viridis', ax=ax)
+st.pyplot(fig)
+
+st.write(f"Silhouette Score: {kmeans_silhouette:.2f}")
+
+st.write("### Hierarchical Clustering (Agglomerative)")
+fig, ax = plt.subplots()
+sns.scatterplot(x=df_pca['PC1'], y=df_pca['PC2'], hue=df_pca['Agglo_Cluster'], palette='coolwarm', ax=ax)
+st.pyplot(fig)
+
+st.write("### DBSCAN Clustering")
+fig, ax = plt.subplots()
+sns.scatterplot(x=df_pca['PC1'], y=df_pca['PC2'], hue=df_pca['DBSCAN_Cluster'], palette='tab10', ax=ax)
+st.pyplot(fig)
+
+st.subheader("Silhouette Score Comparison")
+silhouette_scores = pd.DataFrame({
+    "Clustering Method": ["K-Means", "Hierarchical", "DBSCAN"],
+    "Silhouette Score": [kmeans_silhouette, agglo_silhouette, dbscan_silhouette]
+})
+
+fig = px.bar(silhouette_scores, x="Clustering Method", y="Silhouette Score", 
+             title="Silhouette Score Comparison", color="Clustering Method", text="Silhouette Score")
+st.plotly_chart(fig)
+
+st.write(f"**K-Means Silhouette Score:** {kmeans_silhouette:.2f}")
+st.write(f"**Hierarchical Silhouette Score:** {agglo_silhouette:.2f}")
+st.write(f"**DBSCAN Silhouette Score:** {dbscan_silhouette:.2f} (Lower score due to potential noise points)")
+
+st.subheader("Income Distribution Across Customers")
+st.write("This bar chart shows the income distribution of customers, grouped into different income ranges. It helps identify the most common income levels in the dataset.")
+
+fig, ax = plt.subplots()
+sns.histplot(df["Income"], bins=20, kde=True, ax=ax)
+st.pyplot(fig)
+
+st.subheader("Customer Segmentation Count")
+st.write("This bar chart shows the number of customers in each segment after applying K-Means clustering.")
+
+if "cluster" not in df.columns:
+    st.error("Error: 'cluster' column is missing. Please ensure clustering has been performed.")
+else:
+    cluster_counts = df["cluster"].value_counts().reset_index()
+    cluster_counts.columns = ["Cluster", "Count"]
+    fig = px.bar(cluster_counts, x="Cluster", y="Count", title="Customer Segmentation Count", color="Cluster")
+    st.plotly_chart(fig)
+
+st.subheader("Customer Segmentation Proportion")
+st.write("This pie chart represents the proportion of customers in each cluster. It helps in understanding the distribution of different customer groups.")
+
+fig = px.pie(df, names="cluster", title="Customer Segments", 
+             hole=0.3,  
+             color_discrete_sequence=px.colors.qualitative.Set2,  
+             labels={"cluster": "Customer Segment"},  
+             template="plotly_white")  
+
+fig.update_traces(textinfo='percent+label', textfont_size=14) 
+st.plotly_chart(fig)
+
+st.subheader("Spending Distribution by Product Category")
+
+spending_columns = ["MntWines", "MntFruits", "MntMeatProducts", "MntFishProducts", "MntSweetProducts", "MntGoldProds"]
+df_spending = df[spending_columns].sum().reset_index()
+df_spending.columns = ["Product Category", "Total Spending"]
+
+fig = px.bar(df_spending, x="Product Category", y="Total Spending", title="Total Spending by Product Category", color="Product Category")
+st.plotly_chart(fig)
